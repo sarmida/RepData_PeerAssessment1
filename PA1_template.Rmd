@@ -1,4 +1,4 @@
-----
+---
 #title: "Peer Assesment 1"
 ##author: "Santiago Armida"
 ##date: "12 de junio de 2015"
@@ -18,13 +18,14 @@ For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 ## read data and setup envirnment
 ##  it will read the data in current directory
 ### loads needed packages
+- \usepackage{sqldf}
 ```{r}
 #Install and load libraries
-    library(plyr)
+#  library(plyr)
 #Install can be comented (#) if the package is already down
 # packages to solve question via SQL
-    install.packages("sqldf")
-    library(sqldf)
+#   install.packages("sqldf")
+   library(sqldf)
 ## read data  Activity.csv in same directory
     
     acts <- read.csv("activity.csv")
@@ -36,7 +37,7 @@ stepdata <- sqldf("select date, avg(steps) as avgstep, sum(steps) as sumsteps
                   where steps <> 'NA'
                   group by date")
 
-stepsINT <- ddply(acts, .(interval), summarize, mean=mean(steps, na.rm = TRUE))
+#stepsINT <- ddply(acts, .(interval), summarize, mean=mean(steps, na.rm = TRUE))
 ```
 Histogram of total STEPS
 
@@ -56,34 +57,23 @@ stepmaxint <- sqldf("select interval, avgstep
                                       from stepxday)")
 stepmaxint
 plot(stepxday$interval,stepxday$avgstep,type="l",main="Steps per day",xlab = "Steps in interval 00:00 to 24:00",ylab = "Distribution of steps",col = "blue")
-````
+```
 Imputing missing values
 The average for the interval is assigned to the NA value
 A UNION of both data frames is performed
+
 ```{r, echo=TRUE}
-numNA <- sqldf("select count(*) NUM 
-                from acts
-                where steps is NULL")
+numNA <- sqldf("select count(*) NUM from acts where steps is NULL")
 numNA
-NAs <- sqldf("select a.date, a.interval, b.avgstep
-                from acts a, stepxday b
-                where a.steps is NULL
-                and a.interval = b.interval) 
-ALLsteps <- sqldf("select date, interval, steps 
-                     from acts a
-                     where a.steps is NOT NULL
-                   UNION
-                   select *
-                     from NAs
-                  order by 1,2")
-stepdataB <- sqldf("select date, avg(steps) as avgstep, sum(steps) as sumsteps
-                      from ALLsteps
-                      group by date")
-> hist(stepdataB$sumsteps,main="Histogram of total steps by day",xlab = "Steps in interval",ylab = "Distribution of steps",col = "orange")
+NAs <- sqldf("select a.date, a.interval, b.avgstep from acts a, stepxday b where a.steps is NULL and a.interval = b.interval") 
+ALLsteps <- sqldf("select date, interval, steps from acts a where a.steps is NOT NULL UNION select * from NAs order by 1,2")
+stepdataB <- sqldf("select date, avg(steps) as avgstep, sum(steps) as sumsteps from ALLsteps  group by date")
+hist(stepdataB$sumsteps,main="Histogram of total steps by day",xlab = "Steps in interval",ylab = "Distribution of steps",col = "orange")
 summary(stepdataB)
 ```
 Weekday analysis
+##Function day of week not working in SQL
 ```{r, echo=TRUE}
-weekdata <- sqldf("select *,dayofweek(date) dow from ALLsteps")
-
+WEEKday <- sqldf("select date from ALLsteps")
+head(WEEKday)
 ```
