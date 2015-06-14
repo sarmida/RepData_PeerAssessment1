@@ -1,25 +1,89 @@
+----
+#title: "Peer Assesment 1"
+##author: "Santiago Armida"
+##date: "12 de junio de 2015"
+###output: html_document
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
 
+The variables included in this dataset are:
+  steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+  date: The date on which the measurement was taken in YYYY-MM-DD format
+  interval: Identifier for the 5-minute interval in which measurement was taken
+The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
 
-## Loading and preprocessing the data
+For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
+#  Reproductible Research
+# by Santiago Armida: June 14, 2015
+## read data and setup envirnment
+##  it will read the data in current directory
+### loads needed packages
+```{r}
+#Install and load libraries
+    library(plyr)
+#Install can be comented (#) if the package is already down
+# packages to solve question via SQL
+    install.packages("sqldf")
+    library(sqldf)
+## read data  Activity.csv in same directory
+    
+    acts <- read.csv("activity.csv")
+```
+Calculate the mean and total steps per day SQL
+```{r, echo=TRUE}
+stepdata <- sqldf("select date, avg(steps) as avgstep, sum(steps) as sumsteps 
+                  from acts
+                  where steps <> 'NA'
+                  group by date")
 
+stepsINT <- ddply(acts, .(interval), summarize, mean=mean(steps, na.rm = TRUE))
+```
+Histogram of total STEPS
 
-## What is mean total number of steps taken per day?
+```{r, echo=TRUE}
+hist(stepdata$sumsteps,main="Histogram of total steps by day",xlab = "Steps in interval",ylab = "Distribution of steps",col = "green")
+```
 
+What is the average daily activity pattern?
+```{r simultation, echo=TRUE}
+stepxday <- sqldf("select interval, avg(steps) as avgstep, sum(steps) as sumsteps
+                  from acts
+                  where steps <> 'NA'
+                  group by interval")
+stepmaxint <- sqldf("select interval, avgstep
+                    from stepxday
+                    where avgstep =(select max(avgstep)
+                                      from stepxday)")
+stepmaxint
+plot(stepxday$interval,stepxday$avgstep,type="l",main="Steps per day",xlab = "Steps in interval 00:00 to 24:00",ylab = "Distribution of steps",col = "blue")
+````
+Imputing missing values
+The average for the interval is assigned to the NA value
+A UNION of both data frames is performed
+```{r, echo=TRUE}
+numNA <- sqldf("select count(*) NUM 
+                from acts
+                where steps is NULL")
+numNA
+NAs <- sqldf("select a.date, a.interval, b.avgstep
+                from acts a, stepxday b
+                where a.steps is NULL
+                and a.interval = b.interval) 
+ALLsteps <- sqldf("select date, interval, steps 
+                     from acts a
+                     where a.steps is NOT NULL
+                   UNION
+                   select *
+                     from NAs
+                  order by 1,2")
+stepdataB <- sqldf("select date, avg(steps) as avgstep, sum(steps) as sumsteps
+                      from ALLsteps
+                      group by date")
+> hist(stepdataB$sumsteps,main="Histogram of total steps by day",xlab = "Steps in interval",ylab = "Distribution of steps",col = "orange")
+summary(stepdataB)
+```
+Weekday analysis
+```{r, echo=TRUE}
+weekdata <- sqldf("select *,dayofweek(date) dow from ALLsteps")
 
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+```
