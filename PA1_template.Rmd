@@ -74,6 +74,10 @@ summary(stepdataB)
 Weekday analysis
 ##Function day of week not working in SQL
 ```{r, echo=TRUE}
-WEEKday <- sqldf("select date from ALLsteps")
-head(WEEKday)
+```{r, echo=TRUE}
+weekday = weekdays(as.Date(ALLsteps$date))
+head(weekday)
+weekdata <- cbind(ALLsteps, weekday)
+head(weekdata)
+```
 ```
